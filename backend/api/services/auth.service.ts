@@ -149,8 +149,30 @@ export async function getUserById(userId: string): Promise<UserRow | null> {
 }
 
 /**
- * Met à jour le profil d'un utilisateur.
+ * Recherche d'utilisateurs par email ou numéro de téléphone.
+ * Utilisé pour inviter/ajouter un membre à un groupe.
  */
+export async function searchUsers(
+  query: string,
+  limit = 10
+): Promise<UserRow[]> {
+  if (!query || query.trim().length < 2) {
+    throw new Error('La recherche doit contenir au moins 2 caractères');
+  }
+
+  const term = `%${query.trim().toLowerCase()}%`;
+
+  const { rows } = await pool.query<UserRow>(
+    `SELECT id, email, phone, name, avatar_url, created_at
+     FROM users
+     WHERE LOWER(email) LIKE $1
+        OR phone LIKE $2
+        OR LOWER(name) LIKE $3
+     LIMIT $4`,
+    [term, term, term, limit]
+  );
+  return rows;
+}
 export async function updateProfile(
   userId: string,
   data: { name?: string; phone?: string; avatar_url?: string }

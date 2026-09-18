@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { register, login, getUserById, updateProfile } from '../services/auth.service';
+import { register, login, getUserById, updateProfile, searchUsers } from '../services/auth.service';
 import { requireAuth } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -95,6 +95,26 @@ router.patch('/me', requireAuth, async (req: Request, res: Response) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur lors de la mise à jour';
     res.status(400).json({ error: message });
+  }
+});
+
+// ── GET /api/auth/search?q=... ────────────────────────────────────────────────
+/**
+ * Recherche d'utilisateurs par email, téléphone ou nom.
+ * Paramètre query : ?q=jean ou ?q=+228...
+ */
+router.get('/search', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { q, limit } = req.query as { q?: string; limit?: string };
+    if (!q) {
+      res.status(400).json({ error: 'Paramètre q requis' });
+      return;
+    }
+    const users = await searchUsers(q, limit ? parseInt(limit, 10) : 10);
+    // Ne pas exposer le password_hash — searchUsers ne le retourne pas
+    res.json({ users });
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
   }
 });
 

@@ -4,6 +4,9 @@ import {
   recordContribution,
   listContributions,
   getContributionSummary,
+  updateContribution,
+  deleteContribution,
+  getGroupStats,
 } from '../services/contributions.service';
 import { assertMember } from '../services/members.service';
 import { getGroupById } from '../services/groups.service';
@@ -94,6 +97,59 @@ router.post('/:groupId/contributions', requireAuth, async (req: Request, res: Re
       .catch((err) => console.error('Erreur notification contribution:', err));
 
     res.status(201).json({ contribution });
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+export default router;
+
+// ── GET /api/groups/:groupId/stats ────────────────────────────────────────────
+router.get('/:groupId/stats', requireAuth, async (req: Request, res: Response) => {
+  try {
+    await assertMember(req.params.groupId, req.user!.userId);
+    const stats = await getGroupStats(req.params.groupId);
+    res.json({ stats });
+  } catch (err) {
+    res.status(403).json({ error: (err as Error).message });
+  }
+});
+
+// ── PATCH /api/groups/:groupId/contributions/:contributionId ──────────────────
+router.patch('/:groupId/contributions/:contributionId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { amount, payment_method, note } = req.body as {
+      amount?: number;
+      payment_method?: string;
+      note?: string;
+    };
+    const contribution = await updateContribution(
+      req.params.contributionId,
+      req.params.groupId,
+      req.user!.userId,
+      { amount, payment_method, note }
+    );
+    await req.auditLog('record_contribution', 'contribution', contribution.id, {
+      action: 'update', group_id: req.params.groupId,
+    });
+    res.json({ contribution });
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+// ── DELETE /api/groups/:groupId/contributions/:contributionId ─────────────────
+router.delete('/:groupId/contributions/:contributionId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    await deleteContribution(
+      req.params.contributionId,
+      req.params.groupId,
+      req.user!.userId
+    );
+    await req.auditLog('record_contribution', 'contribution', req.params.contributionId, {
+      action: 'delete', group_id: req.params.groupId,
+    });
+    res.json({ message: 'Cotisation supprimée' });
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
