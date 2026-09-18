@@ -12,6 +12,7 @@ import withdrawalsRoutes from './api/routes/withdrawals';
 import approvalsRoutes from './api/routes/approvals';
 import notificationsRoutes from './api/routes/notifications';
 import devicesRoutes from './api/routes/devices';
+import objectivesRoutes from './api/routes/objectives';
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/groups', membersRoutes);
 app.use('/api/groups', contributionsRoutes);
 app.use('/api/groups', withdrawalsRoutes);
 app.use('/api/withdrawals', approvalsRoutes);
+app.use('/api/groups', objectivesRoutes);   // /api/groups/:groupId/objectives
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/devices', devicesRoutes);
 

@@ -428,7 +428,7 @@ Authorization: Bearer <jwt_token>
 
 ### Authentification
 | Méthode | Route              | Description                    |
-|---------|--------------------|--------------------------------|
+|---------|--------------------|-------------------------------|
 | POST    | `/auth/register`   | Inscription                    |
 | POST    | `/auth/login`      | Connexion                      |
 | GET     | `/auth/me`         | Profil de l'utilisateur        |
@@ -436,7 +436,7 @@ Authorization: Bearer <jwt_token>
 
 ### Groupes
 | Méthode | Route                              | Description                    |
-|---------|------------------------------------|--------------------------------|
+|---------|------------------------------------|-------------------------------|
 | GET     | `/groups`                          | Mes groupes                    |
 | POST    | `/groups`                          | Créer un groupe                |
 | POST    | `/groups/join`                     | Rejoindre via code             |
