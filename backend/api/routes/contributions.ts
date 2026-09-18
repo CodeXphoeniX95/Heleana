@@ -108,7 +108,7 @@ export default router;
 router.get('/:groupId/stats', requireAuth, async (req: Request, res: Response) => {
   try {
     await assertMember(req.params.groupId, req.user!.userId);
-    const stats = await getGroupStats(req.params.groupId);
+    const stats = await getGroupStats(req.params.groupId, req.user!.userId);
     res.json({ stats });
   } catch (err) {
     res.status(403).json({ error: (err as Error).message });

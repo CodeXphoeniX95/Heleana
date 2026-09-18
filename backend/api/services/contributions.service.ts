@@ -163,7 +163,7 @@ export async function deleteContribution(
   if (!rowCount || rowCount === 0) throw new Error('Cotisation introuvable');
 }
 
-export async function getGroupStats(groupId: string) {
+export async function getGroupStats(groupId: string, userId?: string) {
   // Stats par mois (12 derniers mois)
   const { rows: monthly } = await pool.query(
     `SELECT
@@ -219,10 +219,63 @@ export async function getGroupStats(groupId: string) {
     [groupId]
   );
 
+  // ── Stats personnelles du user connecté ───────────────────────────────────
+  let myStats = null;
+  if (userId) {
+    const { rows: myMonthly } = await pool.query(
+      `SELECT
+         TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS month,
+         SUM(amount)::float                                   AS total,
+         COUNT(*)::int                                        AS count
+       FROM contributions
+       WHERE group_id = $1 AND user_id = $2
+         AND created_at >= NOW() - INTERVAL '12 months'
+       GROUP BY DATE_TRUNC('month', created_at)
+       ORDER BY DATE_TRUNC('month', created_at) ASC`,
+      [groupId, userId]
+    );
+
+    const { rows: myTotals } = await pool.query(
+      `SELECT
+         COUNT(*)::int       AS contribution_count,
+         SUM(amount)::float  AS total_contributed,
+         AVG(amount)::float  AS average_per_contribution,
+         MAX(amount)::float  AS max_contribution,
+         MIN(amount)::float  AS min_contribution
+       FROM contributions
+       WHERE group_id = $1 AND user_id = $2`,
+      [groupId, userId]
+    );
+
+    // Rang dans le groupe
+    const { rows: rankRows } = await pool.query(
+      `SELECT rank FROM (
+         SELECT user_id, RANK() OVER (ORDER BY SUM(amount) DESC) AS rank
+         FROM contributions
+         WHERE group_id = $1
+         GROUP BY user_id
+       ) t WHERE user_id = $2`,
+      [groupId, userId]
+    );
+
+    // Part en % du total groupe
+    const groupTotal = totalRows[0]?.total_contributed ?? 0;
+    const myTotal    = myTotals[0]?.total_contributed ?? 0;
+    const sharePct   = groupTotal > 0 ? Math.round((myTotal / groupTotal) * 100) : 0;
+
+    myStats = {
+      ...myTotals[0],
+      monthly: myMonthly,
+      rank: rankRows[0]?.rank ?? null,
+      share_pct: sharePct,
+    };
+  }
+
   return {
     monthly,
     top_members: topMembers,
     monthly_average: avgRows[0]?.monthly_average ?? 0,
     ...totalRows[0],
+    my_stats: myStats,
   };
 }
