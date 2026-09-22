@@ -42,6 +42,7 @@ export interface NotificationLogRow {
   message: string;
   type: string | null;
   entity_id: string | null;
+  group_id?: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -231,7 +232,7 @@ export async function notifyWithdrawalRequest(
       title: 'Demande de retrait',
       message: `${requesterName} demande un retrait de ${amount.toLocaleString('fr-FR')} ${currency}`,
       type: 'withdrawal_request',
-      entity_id: withdrawalId,
+      entity_id: groupId,
     },
     requesterId
   );
@@ -242,7 +243,8 @@ export async function notifyWithdrawalResolved(
   amount: number,
   currency: string,
   status: 'approved' | 'rejected',
-  withdrawalId: string
+  withdrawalId: string,
+  groupId?: string
 ): Promise<void> {
   const isApproved = status === 'approved';
   await notifyUser(requesterId, {
@@ -251,7 +253,7 @@ export async function notifyWithdrawalResolved(
       ? `Votre demande de retrait de ${amount.toLocaleString('fr-FR')} ${currency} a été approuvée`
       : `Votre demande de retrait de ${amount.toLocaleString('fr-FR')} ${currency} a été rejetée`,
     type: isApproved ? 'withdrawal_approved' : 'withdrawal_rejected',
-    entity_id: withdrawalId,
+    entity_id: groupId ?? withdrawalId,
   });
 }
 
@@ -264,9 +266,11 @@ export async function getNotificationsForUser(
 ): Promise<{ notifications: NotificationLogRow[]; unread_count: number }> {
   const [{ rows: notifications }, { rows: countRows }] = await Promise.all([
     pool.query<NotificationLogRow>(
-      `SELECT * FROM notifications_log
-       WHERE user_id = $1
-       ORDER BY created_at DESC
+      `SELECT n.*, COALESCE(w.group_id, n.entity_id) AS group_id
+       FROM notifications_log n
+       LEFT JOIN withdrawals w ON w.id = n.entity_id
+       WHERE n.user_id = $1
+       ORDER BY n.created_at DESC
        LIMIT $2 OFFSET $3`,
       [userId, limit, offset]
     ),

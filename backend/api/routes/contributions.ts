@@ -102,8 +102,6 @@ router.post('/:groupId/contributions', requireAuth, async (req: Request, res: Re
   }
 });
 
-export default router;
-
 // ── GET /api/groups/:groupId/stats ────────────────────────────────────────────
 router.get('/:groupId/stats', requireAuth, async (req: Request, res: Response) => {
   try {

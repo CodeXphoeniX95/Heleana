@@ -13,6 +13,9 @@ import approvalsRoutes from './api/routes/approvals';
 import notificationsRoutes from './api/routes/notifications';
 import devicesRoutes from './api/routes/devices';
 import objectivesRoutes from './api/routes/objectives';
+import dashboardRoutes   from './api/routes/dashboard';
+import groupDetailRoutes from './api/routes/group_detail';
+import adminRoutes       from './api/routes/admin';
 
 const app = express();
 
@@ -40,9 +43,12 @@ app.use('/api/groups', membersRoutes);
 app.use('/api/groups', contributionsRoutes);
 app.use('/api/groups', withdrawalsRoutes);
 app.use('/api/withdrawals', approvalsRoutes);
-app.use('/api/groups', objectivesRoutes);   // /api/groups/:groupId/objectives
+app.use('/api/dashboard',   dashboardRoutes);
+app.use('/api/groups',      groupDetailRoutes);
+app.use('/api/groups',      objectivesRoutes);   // /api/groups/:groupId/objectives
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/devices', devicesRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ── 404 catch-all ────────────────────────────────────────────────────────────
 app.use((_req, res) => {

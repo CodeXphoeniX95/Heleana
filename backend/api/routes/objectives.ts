@@ -32,15 +32,15 @@ router.post('/:groupId/objectives', requireAuth, async (req: Request, res: Respo
       target_date?: string;
     };
 
-    if (!title) {
-      res.status(400).json({ error: 'Le titre est requis' });
+    if (!title || budget === undefined || budget === null) {
+      res.status(400).json({ error: 'Le titre et le budget cible sont requis' });
       return;
     }
 
     const objective = await createObjective(
       req.params.groupId,
       req.user!.userId,
-      { title, description, budget, target_date }
+      { title, description, budget: parseFloat(String(budget)), target_date }
     );
 
     await req.auditLog('create_group', 'objective', objective.id, { title });

@@ -24,7 +24,7 @@ export interface ObjectiveRow {
 export interface CreateObjectiveInput {
   title: string;
   description?: string;
-  budget?: number;
+  budget: number;
   target_date?: string;
 }
 
@@ -52,8 +52,8 @@ export async function createObjective(
   if (!title || title.trim().length < 2) {
     throw new Error('Le titre doit contenir au moins 2 caractères');
   }
-  if (budget !== undefined && budget <= 0) {
-    throw new Error('Le budget doit être supérieur à 0');
+  if (budget === undefined || budget === null || isNaN(budget) || budget <= 0) {
+    throw new Error('Le budget cible est obligatoire et doit être supérieur à 0');
   }
 
   // Tout membre peut créer un objectif
@@ -67,7 +67,7 @@ export async function createObjective(
       groupId,
       title.trim(),
       description?.trim() ?? null,
-      budget ?? null,
+      budget,
       target_date ?? null,
       userId,
     ]
@@ -89,14 +89,30 @@ export async function toggleObjective(
 
   const obj = existing[0];
 
-  // Tout membre peut marquer accompli, seul admin peut désaccomplir
-  if (obj.is_achieved) {
-    await assertAdmin(groupId, userId);
-  } else {
-    await assertMember(groupId, userId);
-  }
+  // Seul un admin du groupe peut marquer un objectif accompli ou non
+  await assertAdmin(groupId, userId);
 
   const newState = !obj.is_achieved;
+
+  // Si on marque l'objectif comme accompli, vérifier que le solde de la caisse permet de le puiser
+  if (newState && obj.budget) {
+    const budgetVal = parseFloat(obj.budget);
+    const { rows: balanceRows } = await pool.query<{ balance: number }>(
+      `SELECT (
+         (SELECT COALESCE(SUM(amount), 0)::float FROM contributions WHERE group_id = $1) -
+         (SELECT COALESCE(SUM(amount), 0)::float FROM withdrawals WHERE group_id = $1 AND status = 'paid') -
+         (SELECT COALESCE(SUM(budget), 0)::float FROM objectives WHERE group_id = $1 AND is_achieved = TRUE)
+       )::float AS balance`,
+      [groupId]
+    );
+    const currentBalance = balanceRows[0]?.balance ?? 0;
+    if (budgetVal > currentBalance) {
+      throw new Error(
+        `Solde de caisse insuffisant (${currentBalance.toLocaleString('fr-FR')} FCFA) pour puiser le budget de cet objectif (${budgetVal.toLocaleString('fr-FR')} FCFA).`
+      );
+    }
+  }
+
   const { rows } = await pool.query<ObjectiveRow>(
     `UPDATE objectives
      SET is_achieved = $1, achieved_at = $2
@@ -121,6 +137,9 @@ export async function updateObjective(
   if (existing.length === 0) throw new Error('Objectif introuvable');
 
   const obj = existing[0];
+  if (obj.is_achieved) {
+    throw new Error('Un objectif accompli ne peut pas être modifié');
+  }
   const member = await assertMember(groupId, userId);
 
   if (obj.created_by !== userId && member.role !== 'admin') {
@@ -158,6 +177,11 @@ export async function deleteObjective(
   if (existing.length === 0) throw new Error('Objectif introuvable');
 
   const obj = existing[0];
+
+  if (obj.is_achieved) {
+    throw new Error('Un objectif accompli ne peut pas être supprimé');
+  }
+
   const member = await assertMember(groupId, userId);
 
   if (obj.created_by !== userId && member.role !== 'admin') {

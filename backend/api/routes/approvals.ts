@@ -55,7 +55,8 @@ router.post('/:withdrawalId/approvals', requireAuth, async (req: Request, res: R
         parseFloat(withdrawal.amount),
         currency,
         withdrawal.status as 'approved' | 'rejected',
-        withdrawal.id
+        withdrawal.id,
+        withdrawal.group_id
       ).catch((err) => console.error('Erreur notification résolution retrait:', err));
     }
 

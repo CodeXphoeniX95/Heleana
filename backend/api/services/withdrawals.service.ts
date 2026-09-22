@@ -43,10 +43,24 @@ export async function requestWithdrawal(
 ): Promise<WithdrawalRow> {
   const { amount, reason, desired_date } = input;
 
-  if (!amount || amount <= 0) throw new Error('Le montant doit être supérieur à 0');
+  if (!amount || amount <= 0) throw new Error('Le montant du retrait doit être supérieur à 0');
   if (!reason || reason.trim().length < 3) throw new Error('Le motif est requis');
 
   await assertMember(groupId, userId);
+
+  // Vérifier que le solde disponible de la caisse est suffisant (interdiction solde négatif)
+  const { rows: balanceRows } = await pool.query<{ balance: number }>(
+    `SELECT (
+       (SELECT COALESCE(SUM(amount), 0)::float FROM contributions WHERE group_id = $1) -
+       (SELECT COALESCE(SUM(amount), 0)::float FROM withdrawals WHERE group_id = $1 AND status = 'paid') -
+       (SELECT COALESCE(SUM(budget), 0)::float FROM objectives WHERE group_id = $1 AND is_achieved = TRUE)
+     )::float AS balance`,
+    [groupId]
+  );
+  const currentBalance = balanceRows[0]?.balance ?? 0;
+  if (amount > currentBalance) {
+    throw new Error(`Solde de caisse insuffisant. Solde disponible : ${currentBalance.toLocaleString('fr-FR')} FCFA`);
+  }
 
   const { rows } = await pool.query<WithdrawalRow>(
     `INSERT INTO withdrawals (group_id, user_id, amount, reason, desired_date)
