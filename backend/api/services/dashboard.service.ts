@@ -64,7 +64,17 @@ export async function getDashboardData(userId: string) {
     [groupIds]
   );
 
-  // ── 3. Retraits en attente (tous groupes) ─────────────────────────────────
+  // Auto-passer en 'paid' tous les retraits historiques restés en 'pending' pour les caisses personnelles (1 membre)
+  await pool.query(
+    `UPDATE withdrawals
+     SET status = 'paid', paid_at = COALESCE(paid_at, NOW()), resolved_at = COALESCE(resolved_at, NOW())
+     WHERE status = 'pending'
+       AND group_id IN (
+         SELECT group_id FROM members GROUP BY group_id HAVING COUNT(*) <= 1
+       )`
+  ).catch(() => {});
+
+  // ── 3. Retraits en attente (groupes collectifs à plus de 1 membre seulement) ──
   const { rows: pendingWithdrawals } = await pool.query(
     `SELECT
        w.id,
@@ -82,7 +92,9 @@ export async function getDashboardData(userId: string) {
      FROM withdrawals w
      JOIN users u ON u.id = w.user_id
      LEFT JOIN approvals a ON a.withdrawal_id = w.id
-     WHERE w.group_id = ANY($1) AND w.status = 'pending'
+     WHERE w.group_id = ANY($1) 
+       AND w.status = 'pending'
+       AND (SELECT COUNT(*) FROM members m WHERE m.group_id = w.group_id) > 1
      GROUP BY w.id, u.name
      ORDER BY w.created_at DESC`,
     [groupIds]

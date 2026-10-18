@@ -53,7 +53,7 @@ export const RegisterPage: React.FC = () => {
           <img
             src="/logo.png"
             alt="Heleanaf"
-            className="w-16 h-16 rounded-2xl mx-auto shadow-lg object-cover"
+            className="w-16 h-16 rounded-full mx-auto shadow-lg object-cover"
           />
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Créer un compte</h1>
           <p className="text-xs text-slate-500">Rejoignez Heleanaf et gérez vos tontines facilement</p>

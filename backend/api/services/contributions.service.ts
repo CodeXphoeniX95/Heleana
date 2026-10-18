@@ -22,14 +22,28 @@ export interface RecordContributionInput {
   note?: string;
 }
 
-const ALLOWED_METHODS = ['cash', 'tmoney', 'flooz', 'bank'];
+const ALLOWED_METHODS = ['cash', 'tmoney', 'flooz', 'bank', 'wave', 'orange_money', 'free_money'];
+
+function normalizePaymentMethod(method?: string): string {
+  if (!method) return 'cash';
+  const lower = method.toLowerCase().trim();
+  if (lower === 'cash' || lower === 'espèces') return 'cash';
+  if (lower === 'tmoney' || lower === 't-money') return 'tmoney';
+  if (lower === 'flooz') return 'flooz';
+  if (lower === 'bank' || lower === 'banque' || lower.includes('virement') || lower.includes('carte')) return 'bank';
+  if (lower === 'wave') return 'wave';
+  if (lower === 'orange_money' || lower === 'orange money' || lower === 'orange') return 'orange_money';
+  if (lower === 'free_money' || lower === 'free money' || lower === 'free') return 'free_money';
+  return lower;
+}
 
 export async function recordContribution(
   groupId: string,
   recorderId: string,
   input: RecordContributionInput
 ): Promise<ContributionRow> {
-  const { user_id, amount, payment_method = 'cash', note } = input;
+  const { user_id, amount, note } = input;
+  const payment_method = normalizePaymentMethod(input.payment_method);
 
   if (!amount || amount <= 0) throw new Error('Le montant doit être supérieur à 0');
   if (!ALLOWED_METHODS.includes(payment_method)) {

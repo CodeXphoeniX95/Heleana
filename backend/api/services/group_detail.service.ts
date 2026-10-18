@@ -47,7 +47,7 @@ export async function getGroupDetail(groupId: string, userId: string) {
        JOIN users u ON u.id = c.user_id
        JOIN users r ON r.id = c.recorded_by
        WHERE c.group_id = $1
-       ORDER BY c.created_at DESC LIMIT 10`,
+       ORDER BY c.created_at DESC LIMIT 100`,
       [groupId]
     ),
     // Tous les retraits

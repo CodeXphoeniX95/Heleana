@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth.store';
 import { notificationsApi } from '../lib/api';
-import { LayoutDashboard, Bell, User, LogOut, Users, UserCheck, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Bell, User, LogOut, Users, UserCheck } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const user = useAuthStore((state) => state.user);
@@ -47,7 +47,7 @@ export const Navbar: React.FC = () => {
             <img
               src="/logo.png"
               alt="Heleanaf"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover shadow-md group-hover:scale-105 transition"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover shadow-md group-hover:scale-105 transition"
             />
             <span className="font-extrabold text-lg sm:text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-emerald-300">
               Heleanaf
@@ -85,18 +85,6 @@ export const Navbar: React.FC = () => {
               )}
             </Link>
 
-            {/* Super Admin Link */}
-            <Link
-              to="/admin"
-              className={`flex items-center space-x-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
-                isActive('/admin')
-                  ? 'bg-amber-400 text-slate-950 shadow font-bold'
-                  : 'text-amber-300 hover:bg-amber-400/20'
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4 text-amber-300 group-hover:text-amber-200" />
-              <span className="hidden lg:inline">Console Admin</span>
-            </Link>
 
             {/* Mode Switch Toggle Button (Personal vs Group mode) */}
             <button

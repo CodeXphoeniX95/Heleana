@@ -44,7 +44,7 @@ export async function requestWithdrawal(
   const { amount, reason, desired_date } = input;
 
   if (!amount || amount <= 0) throw new Error('Le montant du retrait doit être supérieur à 0');
-  if (!reason || reason.trim().length < 3) throw new Error('Le motif est requis');
+  if (!reason || reason.trim().length < 3) throw new Error('Le motif est requis (minimum 3 caractères)');
 
   await assertMember(groupId, userId);
 
@@ -62,11 +62,22 @@ export async function requestWithdrawal(
     throw new Error(`Solde de caisse insuffisant. Solde disponible : ${currentBalance.toLocaleString('fr-FR')} FCFA`);
   }
 
+  // Nombre de membres dans le groupe
+  const { rows: memberCountRows } = await pool.query<{ count: number }>(
+    'SELECT COUNT(*)::int AS count FROM members WHERE group_id = $1',
+    [groupId]
+  );
+  const memberCount = memberCountRows[0]?.count ?? 1;
+
+  // Si c'est une Caisse Personnelle (1 seul membre), le retrait est validé et payé immédiatement
+  const isSingleMember = memberCount <= 1;
+  const initialStatus = isSingleMember ? 'paid' : 'pending';
+
   const { rows } = await pool.query<WithdrawalRow>(
-    `INSERT INTO withdrawals (group_id, user_id, amount, reason, desired_date)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO withdrawals (group_id, user_id, amount, reason, desired_date, status, resolved_at, paid_at)
+     VALUES ($1, $2, $3, $4, $5, $6, ${isSingleMember ? 'NOW()' : 'NULL'}, ${isSingleMember ? 'NOW()' : 'NULL'})
      RETURNING *`,
-    [groupId, userId, amount, reason.trim(), desired_date ?? null]
+    [groupId, userId, amount, reason.trim(), desired_date ?? null, initialStatus]
   );
   return rows[0];
 }
@@ -119,7 +130,7 @@ export async function getWithdrawalById(withdrawalId: string): Promise<Withdrawa
   return rows[0] ?? null;
 }
 
-/** Marquer un retrait approuvé comme payé (admin seulement) */
+/** Marquer un retrait comme payé (admin seulement) */
 export async function markAsPaid(
   withdrawalId: string,
   groupId: string,
@@ -136,11 +147,11 @@ export async function markAsPaid(
   const { rows } = await pool.query<WithdrawalRow>(
     `UPDATE withdrawals
      SET status = 'paid', paid_at = NOW()
-     WHERE id = $1 AND group_id = $2 AND status = 'approved'
+     WHERE id = $1 AND group_id = $2 AND status IN ('approved', 'pending')
      RETURNING *`,
     [withdrawalId, groupId]
   );
-  if (rows.length === 0) throw new Error('Retrait introuvable ou non approuvé');
+  if (rows.length === 0) throw new Error('Retrait introuvable ou déjà payé');
   return rows[0];
 }
 

@@ -51,7 +51,7 @@ export const AdminLoginPage: React.FC = () => {
           <img
             src="/logo.png"
             alt="Heleanaf"
-            className="w-16 h-16 rounded-2xl object-cover shadow-xl mx-auto mb-4 border border-emerald-500/30 hover:scale-105 transition"
+            className="w-16 h-16 rounded-full object-cover shadow-xl mx-auto mb-4 border border-emerald-500/30 hover:scale-105 transition"
           />
           <h1 className="text-2xl font-black text-white tracking-tight">Super Admin Console</h1>
           <p className="text-slate-400 text-xs sm:text-sm mt-1">

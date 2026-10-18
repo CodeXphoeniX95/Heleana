@@ -47,6 +47,9 @@ export const PAYMENT_METHODS = [
   { value: 'tmoney', label: 'T-Money' },
   { value: 'flooz', label: 'Flooz' },
   { value: 'bank', label: 'Banque' },
+  { value: 'wave', label: 'Wave' },
+  { value: 'orange_money', label: 'Orange Money' },
+  { value: 'free_money', label: 'Free Money' },
 ];
 
 export function formatPaymentMethod(method: string | undefined | null): string {
@@ -55,7 +58,10 @@ export function formatPaymentMethod(method: string | undefined | null): string {
   if (lower === 'cash' || lower === 'espèces') return 'Cash';
   if (lower === 'tmoney' || lower === 't-money') return 'T-Money';
   if (lower === 'flooz') return 'Flooz';
-  if (lower === 'bank' || lower === 'banque' || lower.includes('virement')) return 'Banque';
+  if (lower === 'bank' || lower === 'banque' || lower.includes('virement') || lower.includes('carte')) return 'Banque';
+  if (lower === 'wave') return 'Wave';
+  if (lower === 'orange_money' || lower === 'orange money' || lower === 'orange') return 'Orange Money';
+  if (lower === 'free_money' || lower === 'free money' || lower === 'free') return 'Free Money';
   return method;
 }
 

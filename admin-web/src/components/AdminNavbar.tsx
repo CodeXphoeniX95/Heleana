@@ -19,7 +19,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ onRefresh }) => {
             <img
               src="/logo.png"
               alt="Heleanaf"
-              className="w-10 h-10 rounded-xl object-cover shadow-md border border-emerald-500/30"
+              className="w-10 h-10 rounded-full object-cover shadow-md border border-emerald-500/30"
             />
             <div>
               <div className="flex items-center gap-2">
